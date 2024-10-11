@@ -47,7 +47,7 @@ const Page: React.FC = () => {
     // Use 'any' as the type for the configuration object
     public_key: "FLWPUBK_TEST-00b01b55e9c9f1b803f17e394069273f-X",
     tx_ref: Date.now(),
-    amount: 200,
+    amount: 8000,
     currency: "NGN",
     payment_options: "card,mobilemoney,ussd",
     customer: {
