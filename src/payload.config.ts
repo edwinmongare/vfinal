@@ -11,7 +11,7 @@ import { Logo } from "../src/components/Icon";
 import { Certificate } from "./collections/Certificate";
 import { issuingOfficer } from "./collections/IssuingOfficer";
 import { Stamp } from "./collections/Stamp";
-import { lexicalEditor } from '@payloadcms/richtext-lexical';
+//import { lexicalEditor } from "@payloadcms/richtext-lexical";
 
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),

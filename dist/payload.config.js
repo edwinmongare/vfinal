@@ -14,6 +14,7 @@ var Orders_1 = require("./collections/Orders/Orders");
 var Certificate_1 = require("./collections/Certificate");
 var IssuingOfficer_1 = require("./collections/IssuingOfficer");
 var Stamp_1 = require("./collections/Stamp");
+//import { lexicalEditor } from "@payloadcms/richtext-lexical";
 dotenv_1.default.config({
     path: path_1.default.resolve(__dirname, "../.env"),
 });
