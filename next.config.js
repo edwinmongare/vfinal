@@ -6,10 +6,10 @@ const nextConfig = {
         protocol: "http",
         hostname: "localhost",
       },
-      {
-        protocol: "http",
-        hostname: "stateoforigin.oyostate.gov.ng",
-      },
+      // {
+      //   protocol: "http",
+      //   hostname: "stateoforigin.oyostate.gov.ng",
+      // },
     ],
   },
   pageExtensions: ["ts", "tsx"],

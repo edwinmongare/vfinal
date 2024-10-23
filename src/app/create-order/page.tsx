@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { ArrowBigRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
 
 // Define the Page component
@@ -39,13 +38,12 @@ const Page: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [createdID, setCreatedID] = useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
   const [localGovernments, setLocalGovernments] = useState<string[]>([]); // NEW STATE
 
   // Declare config outside of useEffect
   const config: any = {
     // Use 'any' as the type for the configuration object
-    public_key: "FLWPUBK_TEST-00b01b55e9c9f1b803f17e394069273f-X",
+    public_key: "FLWPUBK-a589a7cbc565e79d6a8978b23a434b43-X",
     tx_ref: Date.now(),
     amount: 8000,
     currency: "NGN",
@@ -63,8 +61,8 @@ const Page: React.FC = () => {
   const handleFlutterPayment = useFlutterwave(config);
   const router = useRouter();
   useEffect(() => {
-    // This useEffect will be triggered whenever createdID is updated
     if (createdID !== null) {
+      setLoading(true); // Start loader when payment process starts
       handleFlutterPayment({
         callback: async (response: any) => {
           console.log(response, "response here");
@@ -85,19 +83,49 @@ const Page: React.FC = () => {
                   }),
                 }
               );
-              router.push("/view-orders");
-              toast.success(
-                "We have received payment for your order. Once we approve your request, we shall notify you via email so that you can download your certificate."
-              );
-              console.log(response, "response here");
+
+              if (req.ok) {
+                router.push("/view-orders");
+                toast.success(
+                  "We have received payment for your order. Once we approve your request, we will notify you via email so that you can download your certificate."
+                );
+              } else {
+                throw new Error("Server error while updating order.");
+              }
             } catch (err) {
-              // console.error(err, "Failed to update payment status");
+              toast.error(
+                "Payment was successful, but we couldn't update your order. Please contact support."
+              );
+              console.error(err, "Failed to update payment status");
             }
+          } else {
+            // Handle all failure scenarios (cancelled, failed, or any other error)
+            if (response.status === "cancelled") {
+              toast.error("Payment was cancelled. Please try again.");
+            } else if (response.status === "failed") {
+              toast.error(
+                `Payment failed: ${response.message || "Unknown error"}`
+              );
+            } else if (response.status === "error") {
+              const errorType = response.message || "Payment error occurred.";
+              toast.error(`Error: ${errorType}`);
+            }
+
+            setLoading(false); // Ensure loading is reset if failure occurs
+            closePaymentModal(); // Close the payment modal
           }
 
+          // Close the payment modal and reset the loading state after processing
           closePaymentModal();
+          setLoading(false);
         },
-        onClose: () => {},
+
+        onClose: () => {
+          // Handle modal close events
+          setLoading(false); // Reset loading state when modal is closed
+          closePaymentModal(); // Close the payment modal
+          toast.error("Payment process was closed. You can try again.");
+        },
       });
     }
   }, [createdID, handleFlutterPayment, router]);
