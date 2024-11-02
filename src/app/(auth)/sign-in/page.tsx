@@ -39,12 +39,8 @@ const Page = () => {
       router.refresh();
 
       if (origin) {
+        router.refresh();
         router.push(`/${origin}`);
-        return;
-      }
-
-      if (isSeller) {
-        router.push("/sell");
         return;
       }
 

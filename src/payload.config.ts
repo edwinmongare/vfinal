@@ -17,9 +17,7 @@ dotenv.config({
   path: path.resolve(__dirname, "../.env"),
 });
 
-const redirectToAnalytics = () => {
-  window.location.href = "http://localhost:3000/analytics";
-};
+
 export default buildConfig({
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || "",
 

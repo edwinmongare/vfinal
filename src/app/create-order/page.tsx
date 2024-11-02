@@ -29,43 +29,48 @@ import { toast } from "sonner";
 import { ArrowBigRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
+import {
+  useFlutterwave,
+  closePaymentModal,
+  FlutterWaveTypes,
+} from "flutterwave-react-v3";
 
 // Define the Page component
 const Page: React.FC = () => {
-  // State variables for file and form input values
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [createdID, setCreatedID] = useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
-  const [localGovernments, setLocalGovernments] = useState<string[]>([]); // NEW STATE
+  const [localGovernments, setLocalGovernments] = useState<string[]>([]);
+  const router = useRouter();
 
-  // Declare config outside of useEffect
-  const config: any = {
-    // Use 'any' as the type for the configuration object
-    public_key: "FLWPUBK-a589a7cbc565e79d6a8978b23a434b43-X",
-    tx_ref: Date.now(),
+  const config: FlutterWaveTypes.FlutterwaveConfig = {
+    public_key: "FLWPUBK_TEST-00b01b55e9c9f1b803f17e394069273f-X",
+
+    // public_key: "FLWPUBK-a589a7cbc565e79d6a8978b23a434b43-X",
+    tx_ref: `${Date.now().toString()}_PMCKDU_1`,
     amount: 8000,
     currency: "NGN",
     payment_options: "card,mobilemoney,ussd",
     customer: {
       email: "user@pacesetter.com",
       name: "pacesetter",
+      phone_number: "09000000000", // Placeholder for phone number
     },
     customizations: {
       title: "Pacesetter",
-      description: "Payment for certifcate generation",
+      description: "Payment for certificate generation",
+      logo: "",
     },
   };
 
   const handleFlutterPayment = useFlutterwave(config);
-  const router = useRouter();
+
   useEffect(() => {
-    if (createdID !== null) {
-      setLoading(true); // Start loader when payment process starts
+    if (createdID) {
       handleFlutterPayment({
-        callback: async (response: any) => {
-          console.log(response, "response here");
+        callback: async (response) => {
+          console.log("Payment response:", response); // Log the payment response
 
           if (response.status === "successful") {
             try {
@@ -74,57 +79,37 @@ const Page: React.FC = () => {
                 {
                   method: "PATCH",
                   credentials: "include",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
+                  headers: { "Content-Type": "application/json" },
+                  mode: "no-cors",
                   body: JSON.stringify({
                     _isPaid: true,
-                    _flutterwaveID: `${response.transaction_id}`,
+                    _flutterwaveID: response.transaction_id || "none",
                   }),
                 }
               );
-
               if (req.ok) {
                 router.push("/view-orders");
                 toast.success(
-                  "We have received payment for your order. Once we approve your request, we will notify you via email so that you can download your certificate."
+                  "Payment received! We’ll notify you once your certificate is ready for download."
                 );
               } else {
-                throw new Error("Server error while updating order.");
+                closePaymentModal();
+                throw new Error("Server error updating order.");
               }
-            } catch (err) {
+            } catch {
               toast.error(
-                "Payment was successful, but we couldn't update your order. Please contact support."
+                "Payment successful, but there was an error updating your order. Contact support."
               );
-              console.error(err, "Failed to update payment status");
             }
           } else {
-            // Handle all failure scenarios (cancelled, failed, or any other error)
-            if (response.status === "cancelled") {
-              toast.error("Payment was cancelled. Please try again.");
-            } else if (response.status === "failed") {
-              toast.error(
-                `Payment failed: ${response.message || "Unknown error"}`
-              );
-            } else if (response.status === "error") {
-              const errorType = response.message || "Payment error occurred.";
-              toast.error(`Error: ${errorType}`);
-            }
-
-            setLoading(false); // Ensure loading is reset if failure occurs
-            closePaymentModal(); // Close the payment modal
+            toast.error("Payment was cancelled. Please try again.");
           }
-
-          // Close the payment modal and reset the loading state after processing
           closePaymentModal();
           setLoading(false);
         },
-
         onClose: () => {
-          // Handle modal close events
-          setLoading(false); // Reset loading state when modal is closed
-          closePaymentModal(); // Close the payment modal
-          toast.error("Payment process was closed. You can try again.");
+          closePaymentModal();
+          toast.error("Payment process was closed. Please try again.");
         },
       });
     }
@@ -138,7 +123,6 @@ const Page: React.FC = () => {
     compoundOrVillage: "",
   });
 
-  // Event handler for file input change
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
@@ -156,11 +140,8 @@ const Page: React.FC = () => {
     });
   };
 
-  // Event handler for local government selection
   const handleLocalGovernmentChange = (selectedLocalGovernment: string) => {
-    // Check if the selectedLocalGovernment is already in the array
     if (!localGovernments.includes(selectedLocalGovernment)) {
-      // If not, add it to the array
       setLocalGovernments((prevLocalGovernments) => [
         ...prevLocalGovernments,
         selectedLocalGovernment,
@@ -168,37 +149,21 @@ const Page: React.FC = () => {
     }
   };
 
-  const handleLocalGovernmentRemove = (selectedLocalGovernment: string) => {
-    // Remove the selectedLocalGovernment from the array
-    setLocalGovernments((prevLocalGovernments) =>
-      prevLocalGovernments.filter((lg) => lg !== selectedLocalGovernment)
-    );
-  };
-
-  // Event handler for form submission
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
-    // Check if a file is selected
     if (file) {
       setLoading(true);
-      // Create FormData object
       const formData = new FormData();
-
-      // Append file and additional form data
       formData.append("file", file);
       formData.append("_isPaid", String(false));
-      formData.append("approvedForSale", String("pending"));
-      formData.append("price", String(1000));
-      formData.append("localGovernment", localGovernments.join(",")); // UPDATE HERE
-
-      // Append user details
+      formData.append("approvedForSale", "pending");
+      formData.append("price", "1000");
+      formData.append("localGovernment", localGovernments.join(","));
       Object.entries(formValues).forEach(([key, value]) => {
         formData.append(key, value);
       });
 
       try {
-        // Send POST request to the server
         const response = await axios.post(
           `${process.env.NEXT_PUBLIC_SERVER_URL}/api/orders`,
           formData,
@@ -209,28 +174,21 @@ const Page: React.FC = () => {
           }
         );
 
-        // Check if the submission was successful
         if (response.status === 201) {
           toast.success("Form submitted successfully!");
           setCreatedID(response.data?.doc?.id);
           router.refresh();
-        } else {
-          // toast.error("Form submission failed. Please try again.");
         }
-      } catch (error) {
-        // Handle errors
-        // console.log(error);
+      } catch {
+        toast.error("Form submission failed. Please try again.");
       }
     }
   };
 
-  // Return the JSX for the component
-  // Return the JSX for the component
   return (
     <>
       {loading ? (
         <div className="container relative flex pt-10 flex-col items-center justify-center lg:px-0">
-          {/* Loading spinner */}
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="animate-spin h-8 w-8 text-zinc-300" />
             <h3 className="font-semibold text-xl">Submitting Data...</h3>
@@ -240,10 +198,8 @@ const Page: React.FC = () => {
           </div>
         </div>
       ) : (
-        // Show page content
         <div className="container relative flex pt-10 flex-col items-center justify-center lg:px-0">
           <div className="mx-auto flex w-full flex-col justify-center space-y-5 sm:w-[1050px]">
-            {/* Card component for styling */}
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle>Application Details</CardTitle>
@@ -253,10 +209,8 @@ const Page: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Form for file upload */}
                 <form onSubmit={handleSubmit}>
                   <div className="grid w-full items-center gap-7">
-                    {/* Individual input fields for user details */}
                     {[
                       { name: "surname", label: "Surname" },
                       { name: "firstName", label: "First Name" },
@@ -266,7 +220,7 @@ const Page: React.FC = () => {
                         name: "compoundOrVillage",
                         label: "Compound or Village",
                       },
-                      { name: "localGovernment", label: "Local Government" }, // Move Local Government here
+                      { name: "localGovernment", label: "Local Government" },
                     ].map((field) => (
                       <div
                         key={field.name}
@@ -337,23 +291,23 @@ const Page: React.FC = () => {
                             type="text"
                             value={formValues[field.name]}
                             onChange={(e) => handleInputChange(e, field.name)}
-                            placeholder={`Please enter your ${field.label}`}
+                            placeholder={`Please enter your ${field.label.toLowerCase()}`}
+                            id={field.name}
                           />
                         )}
                       </div>
                     ))}
 
-                    {/* Label for file input */}
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="passport">Passport Image</Label>
-                      <Input type="file" onChange={handleFileChange} />
+                      <Label htmlFor="file">Upload File</Label>
+                      <Input
+                        type="file"
+                        onChange={handleFileChange}
+                        id="file"
+                      />
                     </div>
-
-                    <Button type="submit" className="w-full py-4">
-                      <>
-                        {/* Icon and text */}
-                        <ArrowBigRight className="mr-2" /> Proceed with payment
-                      </>
+                    <Button type="submit" className="w-full">
+                      Submit <ArrowBigRight className="ml-2 h-5 w-5" />
                     </Button>
                   </div>
                 </form>
@@ -366,5 +320,4 @@ const Page: React.FC = () => {
   );
 };
 
-// Export the Page component
 export default Page;

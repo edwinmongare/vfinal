@@ -39,7 +39,9 @@ const sendVerificationEmailAfterApproval: AfterChangeHook<Order> = async ({
     // Create an array of user emails
     const userEmails: string[] = Array.isArray(user)
       ? user
-          .map((userId) => (typeof userId === "string" ? userId : userId.email || ""))
+          .map((userId) =>
+            typeof userId === "string" ? userId : userId.email || ""
+          )
           .filter(Boolean)
       : [typeof user === "string" ? user : "edwinmongare15@gmail.com"];
 
@@ -53,7 +55,7 @@ const sendVerificationEmailAfterApproval: AfterChangeHook<Order> = async ({
     // Send verification email for each user associated with the order
     for (const userEmail of userEmails) {
       await payload.sendEmail({
-        from: "delivered@resend.dev",
+        from: "no_reply@stateoforigin.oyostate.gov.ng",
         to: userEmail,
         subject: "Order Confirmed",
         html: emailHtml, // Use the resolved HTML string
@@ -61,7 +63,6 @@ const sendVerificationEmailAfterApproval: AfterChangeHook<Order> = async ({
     }
   }
 };
-
 
 const yourOwnAndPurchased: Access = async ({ req }) => {
   const user = req.user as User | null;
@@ -117,7 +118,6 @@ const yourOwnAndPurchased: Access = async ({ req }) => {
   };
 };
 
-
 export const Orders: CollectionConfig = {
   slug: "orders",
   admin: {
@@ -133,7 +133,9 @@ export const Orders: CollectionConfig = {
   access: {
     read: yourOwnAndPurchased,
     update: ({ req: { user } }) =>
-      user.role === "user" || user.role === "admin" || user.role === "administrator",
+      user.role === "user" ||
+      user.role === "admin" ||
+      user.role === "administrator",
     delete: ({ req: { user } }) =>
       user.role === "admin" || user.role === "administrator",
     create: ({ req: { user } }) => user.role === "user",
@@ -196,7 +198,7 @@ export const Orders: CollectionConfig = {
       label: "Price in Naira",
       type: "text",
       required: true,
-      defaultValue: "1000",
+      defaultValue: "8000",
     },
     {
       name: "approvedForSale",
@@ -224,7 +226,8 @@ export const Orders: CollectionConfig = {
       access: {
         read: ({ req }) =>
           req.user.role === "admin" || req.user.role === "user",
-        create: ({ req }) => req.user.role === "admin",
+        create: ({ req }) =>
+          req.user.role === "admin" || req.user.role === "user",
         update: ({ req }) =>
           req.user.role === "admin" || req.user.role === "user",
       },
