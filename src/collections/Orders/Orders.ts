@@ -36,30 +36,48 @@ const sendVerificationEmailAfterApproval: AfterChangeHook<Order> = async ({
   const { approvedForSale, user } = doc;
 
   if (approvedForSale === "approved") {
-    // Create an array of user emails
-    const userEmails: string[] = Array.isArray(user)
-      ? user
-          .map((userId) =>
-            typeof userId === "string" ? userId : userId.email || ""
-          )
-          .filter(Boolean)
-      : [typeof user === "string" ? user : "edwinmongare15@gmail.com"];
+    let userEmail: string | null = null;
 
-    // Await the result of the email HTML generation
+    // Directly access the email from the user array
+    if (Array.isArray(user) && user.length > 0) {
+      const firstUser = user[0]; // Assuming you want the email from the first user in the array
+      if (firstUser && typeof firstUser === "object" && "email" in firstUser) {
+        userEmail = firstUser.email || null; // Get the email if it exists
+      }
+    }
+
+    // Check if userEmail is valid
+    if (!userEmail) {
+      req.payload.logger.error(
+        "No valid email address found for order confirmation."
+      );
+      return; // Early exit
+    }
+
+    // Generate the email HTML content
     const emailHtml = await PrimaryActionEmailHtml({
       actionLabel: "Pacesetter Account",
       buttonText: "Download certificate",
       href: `${process.env.NEXT_PUBLIC_SERVER_URL}`,
     });
 
-    // Send verification email for each user associated with the order
-    for (const userEmail of userEmails) {
+    // Attempt to send the email
+    try {
       await payload.sendEmail({
         from: "no_reply@stateoforigin.oyostate.gov.ng",
         to: userEmail,
         subject: "Order Confirmed",
-        html: emailHtml, // Use the resolved HTML string
+        html: emailHtml,
       });
+
+      req.payload.logger.info(`Email successfully sent to ${userEmail}`);
+    } catch (error) {
+      // Log errors clearly
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      req.payload.logger.error(
+        `Failed to send email to ${userEmail}: ${errorMessage}`
+      );
     }
   }
 };

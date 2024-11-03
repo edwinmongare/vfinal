@@ -34,6 +34,8 @@ import {
   closePaymentModal,
   FlutterWaveTypes,
 } from "flutterwave-react-v3";
+import { MultiStepLoader } from "@/components/ui/multi-step-loader";
+import { MultiStepLoaderDemo } from "@/components/multi-step-loader";
 
 // Define the Page component
 const Page: React.FC = () => {
@@ -46,16 +48,14 @@ const Page: React.FC = () => {
 
   const config: FlutterWaveTypes.FlutterwaveConfig = {
     public_key: "FLWPUBK_TEST-00b01b55e9c9f1b803f17e394069273f-X",
-
-    // public_key: "FLWPUBK-a589a7cbc565e79d6a8978b23a434b43-X",
-    tx_ref: `${Date.now().toString()}_PMCKDU_1`,
+    tx_ref: Date.now().toString(),
     amount: 8000,
     currency: "NGN",
     payment_options: "card,mobilemoney,ussd",
     customer: {
-      email: "user@pacesetter.com",
+      email: "user@stateoforigin.oyostate.gov.ng",
       name: "pacesetter",
-      phone_number: "09000000000", // Placeholder for phone number
+      phone_number: "000",
     },
     customizations: {
       title: "Pacesetter",
@@ -70,7 +70,7 @@ const Page: React.FC = () => {
     if (createdID) {
       handleFlutterPayment({
         callback: async (response) => {
-          console.log("Payment response:", response); // Log the payment response
+          console.log("Payment response:", response);
 
           if (response.status === "successful") {
             try {
@@ -80,10 +80,9 @@ const Page: React.FC = () => {
                   method: "PATCH",
                   credentials: "include",
                   headers: { "Content-Type": "application/json" },
-                  mode: "no-cors",
                   body: JSON.stringify({
                     _isPaid: true,
-                    _flutterwaveID: response.transaction_id || "none",
+                    _flutterwaveID: response.flw_ref,
                   }),
                 }
               );
@@ -176,7 +175,7 @@ const Page: React.FC = () => {
 
         if (response.status === 201) {
           toast.success("Form submitted successfully!");
-          setCreatedID(response.data?.doc?.id);
+          setCreatedID(response.data?.doc?.flw_ref);
           router.refresh();
         }
       } catch {
@@ -190,11 +189,7 @@ const Page: React.FC = () => {
       {loading ? (
         <div className="container relative flex pt-10 flex-col items-center justify-center lg:px-0">
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="animate-spin h-8 w-8 text-zinc-300" />
-            <h3 className="font-semibold text-xl">Submitting Data...</h3>
-            <p className="text-muted-foreground text-sm">
-              This won&apos;t take long.
-            </p>
+            <MultiStepLoaderDemo />
           </div>
         </div>
       ) : (
@@ -297,17 +292,24 @@ const Page: React.FC = () => {
                         )}
                       </div>
                     ))}
-
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="file">Upload File</Label>
+                      <Label htmlFor="passport">
+                        Select a file to upload (JPEG, PNG, PDF)
+                      </Label>
                       <Input
                         type="file"
+                        id="passport"
+                        accept=".pdf, .jpg, .jpeg, .png"
                         onChange={handleFileChange}
-                        id="file"
                       />
                     </div>
-                    <Button type="submit" className="w-full">
-                      Submit <ArrowBigRight className="ml-2 h-5 w-5" />
+                    <Button
+                      disabled={!file}
+                      className="flex w-full h-14 gap-1 items-center text-center justify-center text-lg"
+                      type="submit"
+                    >
+                      <ArrowBigRight className="h-6" />
+                      Submit
                     </Button>
                   </div>
                 </form>
