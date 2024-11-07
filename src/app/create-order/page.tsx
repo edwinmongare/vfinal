@@ -47,7 +47,7 @@ const Page: React.FC = () => {
   const router = useRouter();
 
   const config: FlutterWaveTypes.FlutterwaveConfig = {
-    public_key: "FLWPUBK_TEST-00b01b55e9c9f1b803f17e394069273f-X",
+    public_key: "FLWPUBK-a589a7cbc565e79d6a8978b23a434b43-X",
     tx_ref: Date.now().toString(),
     amount: 8000,
     currency: "NGN",
