@@ -70,6 +70,7 @@ const Page: React.FC = () => {
     if (createdID) {
       handleFlutterPayment({
         callback: async (response) => {
+          // Log the full payment response for debugging
           console.log("Payment response:", response);
 
           if (response.status === "successful") {
@@ -79,36 +80,52 @@ const Page: React.FC = () => {
                 {
                   method: "PATCH",
                   credentials: "include",
-                  headers: { "Content-Type": "application/json" },
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
                   body: JSON.stringify({
                     _isPaid: true,
-                    _flutterwaveID: response.flw_ref,
+                    _flutterwaveID: response.flw_ref, // Update the payment reference
                   }),
                 }
               );
+
               if (req.ok) {
+                // Log successful payment update
+                console.log("Payment update successful for order:", createdID);
                 router.push("/view-orders");
                 toast.success(
                   "Payment received! We’ll notify you once your certificate is ready for download."
                 );
               } else {
+                // Log server error response
+                console.error("Error updating order:", await req.text());
                 closePaymentModal();
-                throw new Error("Server error updating order.");
+                toast.error("Server error updating your order.");
               }
-            } catch {
+            } catch (error) {
+              // Log unexpected errors
+              console.error("Error during order update:", error);
               toast.error(
                 "Payment successful, but there was an error updating your order. Contact support."
               );
             }
           } else {
+            // Log payment failure or cancellation
+            console.error("Payment failed or was canceled:", response);
             toast.error("Payment was cancelled. Please try again.");
           }
+
+          // Close the payment modal regardless of the outcome
           closePaymentModal();
           setLoading(false);
         },
         onClose: () => {
+          // Log when payment modal is closed before completion
+          console.log("Payment modal closed by user.");
           closePaymentModal();
           toast.error("Payment process was closed. Please try again.");
+          setLoading(false);
         },
       });
     }
@@ -175,8 +192,57 @@ const Page: React.FC = () => {
 
         if (response.status === 201) {
           toast.success("Form submitted successfully!");
-          setCreatedID(response.data?.doc?.flw_ref);
-          router.refresh();
+          setCreatedID(response.data?.doc?.id); // Setting the createdID
+          console.log(response.data?.doc?.id, "respomse from server");
+          // Trigger the Flutterwave payment process once the createdID is set
+          handleFlutterPayment({
+            callback: async (response) => {
+              console.log("Payment response:", response);
+
+              if (response.status === "successful") {
+                try {
+                  const req = await fetch(
+                    `${process.env.NEXT_PUBLIC_SERVER_URL}/api/orders/${createdID}`,
+                    {
+                      method: "PATCH",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        _isPaid: true,
+                        _flutterwaveID: response.transaction_id,
+                      }),
+                    }
+                  );
+
+                  if (req.ok) {
+                    router.push("/view-orders");
+                    toast.success(
+                      "Payment received! We’ll notify you once your certificate is ready for download."
+                    );
+                  } else {
+                    closePaymentModal();
+                    toast.error("Server error updating your order.");
+                  }
+                } catch (error) {
+                  console.error(error);
+                  toast.error(
+                    "Payment successful, but there was an error updating your order. Contact support."
+                  );
+                }
+              } else {
+                toast.error("Payment was cancelled. Please try again.");
+              }
+              closePaymentModal();
+              setLoading(false);
+            },
+            onClose: () => {
+              closePaymentModal();
+              toast.error("Payment process was closed. Please try again.");
+              setLoading(false);
+            },
+          });
         }
       } catch {
         toast.error("Form submission failed. Please try again.");
@@ -305,11 +371,11 @@ const Page: React.FC = () => {
                     </div>
                     <Button
                       disabled={!file}
-                      className="flex w-full h-14 gap-1 items-center text-center justify-center text-lg"
+                      className="flex w-full  gap-1 items-center text-center justify-center text-lg"
                       type="submit"
                     >
                       <ArrowBigRight className="h-6" />
-                      Submit
+                      Proceed with Payment
                     </Button>
                   </div>
                 </form>
