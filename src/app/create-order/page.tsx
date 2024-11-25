@@ -73,7 +73,7 @@ const Page: React.FC = () => {
           // Log the full payment response for debugging
           console.log("Payment response:", response);
 
-          if (response.status === "successful") {
+          if (response.status === "completed") {
             try {
               const req = await fetch(
                 `${process.env.NEXT_PUBLIC_SERVER_URL}/api/orders/${createdID}`,
@@ -85,7 +85,7 @@ const Page: React.FC = () => {
                   },
                   body: JSON.stringify({
                     _isPaid: true,
-                    _flutterwaveID: response.flw_ref, // Update the payment reference
+                    _flutterwaveID: response.tx_ref, // Update the payment reference
                   }),
                 }
               );
@@ -117,7 +117,7 @@ const Page: React.FC = () => {
           }
 
           // Close the payment modal regardless of the outcome
-          closePaymentModal();
+          //closePaymentModal();
           setLoading(false);
         },
         onClose: () => {
@@ -199,7 +199,7 @@ const Page: React.FC = () => {
             callback: async (response) => {
               console.log("Payment response:", response);
 
-              if (response.status === "successful") {
+              if (response.status === "completed") {
                 try {
                   const req = await fetch(
                     `${process.env.NEXT_PUBLIC_SERVER_URL}/api/orders/${createdID}`,
@@ -234,7 +234,6 @@ const Page: React.FC = () => {
               } else {
                 toast.error("Payment was cancelled. Please try again.");
               }
-              closePaymentModal();
               setLoading(false);
             },
             onClose: () => {
