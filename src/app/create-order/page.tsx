@@ -49,7 +49,7 @@ const Page: React.FC = () => {
   const config: FlutterWaveTypes.FlutterwaveConfig = {
     public_key: "FLWPUBK-a589a7cbc565e79d6a8978b23a434b43-X",
     tx_ref: Date.now().toString(),
-    amount: 50,
+    amount: 8000,
     currency: "NGN",
     payment_options: "card,mobilemoney,ussd",
     customer: {
